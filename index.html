@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Birthdates</title>
+    <style>
+
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: .25rem;
+  color: #0c0;
+  background: #000;
+  font-size: 1rem;
+  font-family: monospace;
+  line-height: 1;
+}
+
+#title {
+  margin: 1rem .25rem;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.person {
+  display: inline-block;
+  margin: .25rem;
+  border: 1px solid #777;
+  padding: .5rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.name {
+  margin-bottom: .4rem;
+  font-size: .9rem;
+  font-weight: bold;
+}
+
+.birthdate {
+  margin-bottom: .25rem;
+}
+
+.lived {
+  margin-bottom: .35rem;
+  font-size : .8rem;
+}
+
+.lived strong {
+  font-size: 1.05rem;
+}
+
+.left {
+  margin-bottom: .2rem;
+}
+
+.birthdate,
+.left,
+.after {
+  color: #090;
+  font-size: .8rem;
+  line-height: 1.1;
+}
+
+.space {
+  visibility: hidden;
+}
+
+    </style>
+    <script>
+
+/**
+ * 現在日付を返す (シングルトン)
+ * 
+ * @return {Date} 現在日付の0時0分0秒
+ */
+const getCurrentDate = (() => {
+  let currentDay;
+  return () => {
+    if(currentDay) {
+      return currentDay;
+    }
+    // 0時0分0秒を確実に得るため次のようにする
+    const now = new Date();
+    currentDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    return currentDay;
+  };
+})();
+
+/**
+ * 指定の年月日の0時0分0秒の Date を得る
+ * 
+ * @param {string} dateText 'YYYY-MM-DD' など Date 型に変換可能な文字列
+ * @return {Date} 指定の年月日の0時0分0秒
+ */
+function getDate(dateText) {
+  const date = new Date(dateText);
+  date.setHours(0);
+  date.setMinutes(0);
+  date.setSeconds(0);
+  return date;
+}
+
+/**
+ * Date から曜日を取得する
+ * 
+ * @param {Date} date 日付
+ * @return {string} 曜日
+ */
+function getDaysOfTheWeek(date) {
+  const japaneseDays = ['日', '月', '火', '水', '木', '金', '土'];
+  return japaneseDays[date.getDay()];
+}
+
+/**
+ * 数字に3桁区切りのカンマを付与する
+ * 
+ * @param {number} num 数字
+ * @return {string} カンマを付与した文字列
+ */
+function addComma(num) {
+  return String(num).replace((/(\d)(?=(\d\d\d)+(?!\d))/g), '$1,');
+}
+
+/**
+ * Date を 'YYYY-MM-DD' 形式に変換する
+ * 
+ * @param {Date} date 日付
+ * @return {string} 'YYYY-MM-DD' 形式の文字列
+ */
+function formatDate(date) {
+  return date.getFullYear()
+    + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
+    + '-' + ('0' + date.getDate()).slice(-2);
+}
+
+/**
+ * 生年月日から現在日付までの経過日数を取得する
+ * 
+ * @param {Date} birthdate 生年月日
+ * @return {number} 経過日数
+ */
+function getLivedDays(birthdate) {
+  const days = (getCurrentDate().getTime() - birthdate.getTime()) / 86400000;  // 1000 * 60 * 60 * 24
+  return days + 1;
+}
+
+/**
+ * 生年月日から指定日数後の日付を計算する
+ * 
+ * @param {Date} birthdate 生年月日
+ * @param {number} days 加算する日数
+ * @return {Date} 指定日数後の日付
+ */
+function getAfterDate(birthdate, days) {
+  const afterDate = new Date(birthdate);
+  afterDate.setDate(afterDate.getDate() + days);
+  return `${formatDate(afterDate)} (${getDaysOfTheWeek(afterDate)})`;
+}
+
+/**
+ * 一人の日付情報を計算・表示する
+ * 
+ * @param {HTMLElement} person 子要素に .birthdate・.name を持つ .person 要素
+ */
+function calcLived(person) {
+  // 生年月日を取得する
+  const birthdateElem = person.querySelector('.birthdate');
+  const birthdate = getDate(birthdateElem.innerText);
+  
+  // 生年月日の記載がない場合は終了する
+  if(birthdate.toString() === 'Invalid Date') {
+    person.querySelector('.name').style.marginBottom = '0';
+    birthdateElem.style.display = 'none';
+    return;
+  }
+  
+  // 曜日を表示する
+  birthdateElem.innerText += ` (${getDaysOfTheWeek(birthdate)})`;
+  
+  // 生まれてからの日数を表示する
+  const livedDays = getLivedDays(birthdate);
+  person.insertAdjacentHTML('beforeend', `<div class="lived"><strong>${addComma(livedDays)}</strong> Day${livedDays !== 1 ? 's' : ''} Lived</div>`);
+  
+  // 3万日までの残り日数を表示する
+  const leftDays = 30000 - livedDays;
+  const text = (leftDays >= 0)
+    ? `${addComma(leftDays)} Day${leftDays !== 1 ? 's' : ''} Left`
+    : `${addComma(Math.abs(leftDays))} Day${leftDays !== -1 ? 's' : ''} Over`;
+  person.insertAdjacentHTML('beforeend', `<div class="left" >${text}<span class="space">&nbsp;</span></div>`);
+  
+  // 経過日を計算して表示する
+  person.insertAdjacentHTML('beforeend', '<div class="after after-10"   ><span class="space">&nbsp;&nbsp;&nbsp;&nbsp;</span>' +     `10日後：${getAfterDate(birthdate,    10)}</div>`);
+  person.insertAdjacentHTML('beforeend', '<div class="after after-100"  ><span class="space">&nbsp;&nbsp;&nbsp;</span>'       +    `100日後：${getAfterDate(birthdate,   100)}</div>`);
+  person.insertAdjacentHTML('beforeend', '<div class="after after-1000" ><span class="space">&nbsp;</span>'                   +  `1,000日後：${getAfterDate(birthdate,  1000)}</div>`);
+  person.insertAdjacentHTML('beforeend', '<div class="after after-10000">'                                                    + `10,000日後：${getAfterDate(birthdate, 10000)}</div>`);
+}
+
+/** イベント定義 */
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.person').forEach((person) => {
+    try {
+      calcLived(person);
+    }
+    catch(error) {
+      console.error(error);
+    }
+  });
+});
+
+    </script>
+  </head>
+  <body>
+    <h1 id="title">Birthdates</h1>
+    <!--
+      次の形式で一人分の情報を記述する
+      
+      <div class="person">
+        <div class="name">名前</div>
+        <div class="birthdate">YYYY-MM-DD</div>
+      </div>
+    -->
+
+<div class="container">
+  <div class="person">
+    <div class="name">Name 1</div>
+    <div class="birthdate">1985-10-26</div>
+  </div>
+  <div class="person">
+    <div class="name">Name 2</div>
+    <div class="birthdate">2015-10-21</div>
+  </div>
+</div>
+
+  </body>
+</html>
