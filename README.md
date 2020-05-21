@@ -3,6 +3,11 @@
 シングル HTML ファイル・ローカルでも動作する誕生日管理アプリ。
 
 
+## Demo
+
+__[Enter The Demo Site](https://neos21.github.io/birthdates/)__
+
+
 ## How To Use
 
 `index.html` を開き、HTML 部分を次の要領で記述していく。
@@ -21,6 +26,7 @@
     <div class="name">Neo's World</div>
     <div class="birthdate">2002-10-09</div>
   </div>
+  
 </div>
 ```
 
