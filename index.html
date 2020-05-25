@@ -149,7 +149,7 @@ function formatDate(date) {
  */
 function getLivedDays(birthdate) {
   const days = (getCurrentDate().getTime() - birthdate.getTime()) / 86400000;  // 1000 * 60 * 60 * 24
-  return days + 1;
+  return days;
 }
 
 /**
@@ -201,6 +201,8 @@ function calcLived(person) {
   person.insertAdjacentHTML('beforeend', '<div class="after after-100"  ><span class="space">&nbsp;&nbsp;&nbsp;</span>'       +    `100日後：${getAfterDate(birthdate,   100)}</div>`);
   person.insertAdjacentHTML('beforeend', '<div class="after after-1000" ><span class="space">&nbsp;</span>'                   +  `1,000日後：${getAfterDate(birthdate,  1000)}</div>`);
   person.insertAdjacentHTML('beforeend', '<div class="after after-10000">'                                                    + `10,000日後：${getAfterDate(birthdate, 10000)}</div>`);
+  person.insertAdjacentHTML('beforeend', '<div class="after after-20000">'                                                    + `20,000日後：${getAfterDate(birthdate, 20000)}</div>`);
+  person.insertAdjacentHTML('beforeend', '<div class="after after-30000">'                                                    + `30,000日後：${getAfterDate(birthdate, 30000)}</div>`);
 }
 
 /** イベント定義 */
