@@ -3,9 +3,11 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
     <!-- Google Search Console -->
     <meta name="google-site-verification" content="ls7kuvIKSqVa_dcixqKvFwl393swvYMkHCkG-xtlCj0">
     <title>Birthdates</title>
+    <link rel="icon" href="/favicon.ico">
     <!-- Global Site Tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LP3ZQV2R3M"></script>
     <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-LP3ZQV2R3M');gtag('config','UA-106501-6');</script>
@@ -21,13 +23,33 @@ body {
   margin: .25rem;
   color: #0c0;
   background: #000;
-  font-size: 1rem;
-  font-family: monospace;
+  font-family: "Noto Sans Mono CJK JP", MeiryoKe_Gothic, Osaka-mono, "MS Gothic", "Courier New", monospace;
   line-height: 1;
+  cursor: default;
+}
+
+p {
+  margin: 1rem .25rem;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+  
+  a:hover {
+    text-decoration: underline;
+  }
+
+#github-link {
+  font-size: .8rem;
+  text-align: right;
+  text-decoration: underline;
 }
 
 #title {
-  margin: 1rem .25rem;
+  margin: 0 .25rem 1rem;
+  font-size: 1.5rem;
 }
 
 .container {
@@ -39,44 +61,56 @@ body {
   display: inline-block;
   margin: .25rem;
   border: 1px solid #777;
-  padding: .5rem;
+  padding: .5rem .75rem;
+  font-size: .8rem;
   text-align: center;
+  line-height: 1.15;
   white-space: nowrap;
 }
+  
+  .person.has-error {
+    border-color: #f00;
+    color: #f00 !important;
+  }
+    
+    .person.has-error * {
+      color: #f00 !important;
+    }
+  
+  .person > *:not(:last-child) {
+    margin-bottom: .4rem;
+  }
+  
+  /** 生後日数・次の誕生日以外は少し暗めにする */
+  .person > :not(.lived):not(.next-birthday) {
+    color: #090;
+  }
 
 .name {
-  margin-bottom: .4rem;
   font-size: .9rem;
   font-weight: bold;
-}
-
-.birthdate {
-  margin-bottom: .25rem;
-}
-
-.lived {
-  margin-bottom: .35rem;
-  font-size : .8rem;
 }
 
 .lived strong {
   font-size: 1.05rem;
 }
 
-.left {
-  margin-bottom: .2rem;
-}
-
-.birthdate,
-.left,
 .after {
-  color: #090;
-  font-size: .8rem;
-  line-height: 1.1;
+  display: grid;
+  grid-template-columns: auto 1fr;
 }
+  
+  .after .after-key {
+    text-align: right;
+  }
+  
+  .after .after-value {
+    text-align: left;
+  }
 
-.space {
-  visibility: hidden;
+.error-message {
+  color: #f00;
+  font-weight: bold;
 }
 
     </style>
@@ -88,41 +122,30 @@ body {
  * @return {Date} 現在日付の0時0分0秒
  */
 const getCurrentDate = (() => {
-  let currentDay;
+  let currentDate;
   return () => {
-    if(currentDay) {
-      return currentDay;
+    if(currentDate) {
+      return currentDate;
     }
     // 0時0分0秒を確実に得るため次のようにする
     const now = new Date();
-    currentDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    return currentDay;
+    currentDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    return currentDate;
   };
 })();
 
 /**
  * 指定の年月日の0時0分0秒の Date を得る
  * 
- * @param {string} dateText 'YYYY-MM-DD' など Date 型に変換可能な文字列
+ * @param {string} dateString 'YYYY-MM-DD' など Date 型に変換可能な文字列
  * @return {Date} 指定の年月日の0時0分0秒
  */
-function getDate(dateText) {
-  const date = new Date(dateText);
+function stringToDate(dateString) {
+  const date = new Date(dateString);
   date.setHours(0);
   date.setMinutes(0);
   date.setSeconds(0);
   return date;
-}
-
-/**
- * Date から曜日を取得する
- * 
- * @param {Date} date 日付
- * @return {string} 曜日
- */
-function getDaysOfTheWeek(date) {
-  const japaneseDays = ['日', '月', '火', '水', '木', '金', '土'];
-  return japaneseDays[date.getDay()];
 }
 
 /**
@@ -132,30 +155,42 @@ function getDaysOfTheWeek(date) {
  * @return {string} カンマを付与した文字列
  */
 function addComma(num) {
-  return String(num).replace((/(\d)(?=(\d\d\d)+(?!\d))/g), '$1,');
+  return String(num).replace((/(\d)(?=(\d{3})+(?!\d))/gu), '$1,');
 }
 
 /**
- * Date を 'YYYY-MM-DD' 形式に変換する
+ * Date を 'YYYY-MM-DD (曜日)' 形式に変換する
  * 
  * @param {Date} date 日付
- * @return {string} 'YYYY-MM-DD' 形式の文字列
+ * @return {string} 'YYYY-MM-DD (曜日)' 形式の文字列
  */
 function formatDate(date) {
-  return date.getFullYear()
+  const formattedDate = date.getFullYear()
     + '-' + ('0' + (date.getMonth() + 1)).slice(-2)
     + '-' + ('0' + date.getDate()).slice(-2);
+  return `${formattedDate} (${getDaysOfTheWeek(date)})`;
+  
+  /**
+   * Date から曜日を取得する
+   * 
+   * @param {Date} date 日付
+   * @return {string} 曜日
+   */
+  function getDaysOfTheWeek(date) {
+    const japaneseDays = ['日', '月', '火', '水', '木', '金', '土'];
+    return japaneseDays[date.getDay()];
+  }
 }
 
 /**
- * 生年月日から現在日付までの経過日数を取得する
+ * 生年月日から現在日付までの経過日数を計算する
  * 
  * @param {Date} birthdate 生年月日
  * @return {number} 経過日数
  */
-function getLivedDays(birthdate) {
+function calcLivedDays(birthdate) {
   const days = (getCurrentDate().getTime() - birthdate.getTime()) / 86400000;  // 1000 * 60 * 60 * 24
-  return days;
+  return Math.ceil(days);  // 0時0分0秒の日付情報しか使っていないが念のため
 }
 
 /**
@@ -163,89 +198,250 @@ function getLivedDays(birthdate) {
  * 
  * @param {Date} birthdate 生年月日
  * @param {number} days 加算する日数
- * @return {Date} 指定日数後の日付
+ * @return {string} 指定日数後の日付と曜日
  */
-function getAfterDate(birthdate, days) {
+function calcAfterDate(birthdate, days) {
   const afterDate = new Date(birthdate);
   afterDate.setDate(afterDate.getDate() + days);
-  return `${formatDate(afterDate)} (${getDaysOfTheWeek(afterDate)})`;
+  return formatDate(afterDate);
 }
 
 /**
- * 一人の日付情報を計算・表示する
+ * 生年月日と現在日付から現在の年齢を計算する
  * 
- * @param {HTMLElement} person 子要素に .birthdate・.name を持つ .person 要素
+ * @param {Date} birthdate 生年月日
+ * @return {number} 年齢
  */
-function calcLived(person) {
-  // 生年月日を取得する
-  const birthdateElem = person.querySelector('.birthdate');
-  const birthdate = getDate(birthdateElem.innerText);
-  
-  // 生年月日の記載がない場合は終了する
-  if(birthdate.toString() === 'Invalid Date') {
-    person.querySelector('.name').style.marginBottom = '0';
-    birthdateElem.style.display = 'none';
-    return;
+function calcCurrentAge(birthdate) {
+  // 今年の誕生日を迎えているかどうかで調整する
+  const thisYearsBirthday = new Date(getCurrentDate().getFullYear(), birthdate.getMonth(), birthdate.getDate(), 0, 0, 0);
+  const age = getCurrentDate().getFullYear() - birthdate.getFullYear() - (getCurrentDate() < thisYearsBirthday ? 1 : 0);
+  return age;
+}
+
+/**
+ * 生年月日と現在日付から次の誕生日を計算する
+ * 
+ * @param {Date} birthdate 生年月日
+ * @return {string} 次の誕生日の日付と曜日
+ */
+function calcNextBirthday(birthdate) {
+  const thisYearsBirthday = new Date(getCurrentDate().getFullYear(), birthdate.getMonth(), birthdate.getDate(), 0, 0, 0);
+  if(getCurrentDate() < thisYearsBirthday) {
+    return formatDate(thisYearsBirthday);
   }
+  else {
+    const nextYearsBirthday = new Date(thisYearsBirthday.getFullYear() + 1, thisYearsBirthday.getMonth(), thisYearsBirthday.getDate(), 0, 0, 0);
+    return formatDate(nextYearsBirthday);
+  }
+}
+
+/**
+ * クエリパラメータから人情報をコンテナ別に取得する
+ * 
+ * @param {object} URL パラメータの連想配列
+ * @return {Array<Array<{ name: string; birthdate: Date; }>>} 人情報の配列をコンテナ順に配置した配列
+ * @throws 不正なパラメータがあった場合
+ */
+function getPeopleInfoFromParams(params) {
+  // 人情報のパラメータを処理する
+  const rawContainers = Object.entries(params)
+    .filter(([key, value]) => key.match((/^(c)([0-9]+)$/u)))  // c0・c1 といったキーのみ対象にする
+    .reduce((containers, [key, value]) => {
+      const containerNumber = Number(key.match((/^(c)([0-9]+)$/u))[2]);
+      containers[containerNumber] = {};
+      
+      splitArrays(value.split(','), 2).forEach((pair, index) => {
+        if(pair == null || pair.length !== 2) throw new Error('Invalid Parameter');
+        let name      = pair?.[0].trim();
+        let birthdate = pair?.[1].trim();
+        if(name      == null) throw new Error('Name Does Not Exist');
+        if(birthdate == null) throw new Error('Birthdate Does Not Exist');
+        
+        birthdate = stringToDate(birthdate);  // 文字列が new Date() で解釈可能なら成功する
+        if(birthdate.toString() === 'Invalid Date') throw new Error('Invalid Date');  // 生年月日が不正な場合
+        
+        containers[containerNumber][index] = { name, birthdate };
+      });
+      
+      return containers;
+    }, {});
   
-  // 曜日を表示する
-  birthdateElem.innerText += ` (${getDaysOfTheWeek(birthdate)})`;
+  // 人情報のパラメータをソートする : [ [{name, birthdate},{name, birthdate}], [{name, birthdate}], ...]
+  const sortedContainers = Object.keys(rawContainers).sort().map((containerKey) => {
+    return Object.keys(rawContainers[containerKey]).sort().map((personKey) => {
+      return rawContainers[containerKey][personKey];
+    });
+  });
   
-  // 生まれてからの日数を表示する
-  const livedDays = getLivedDays(birthdate);
-  person.insertAdjacentHTML('beforeend', `<div class="lived"><strong>${addComma(livedDays)}</strong> Day${livedDays !== 1 ? 's' : ''} Lived</div>`);
+  return sortedContainers;
   
-  // 3万日までの残り日数を表示する
+  /**
+   * 配列を指定の要素数ずつの配列に分割する
+   * 
+   * @param {Array<any>} array 配列
+   * @param {number} num 分割数
+   * @return {Array<Array<any>>} 要素を分割した配列
+   */
+  function splitArrays(array, num) {
+    return array.reduce((acc, item) => {
+      const lastArray = acc[acc.length - 1];
+      if(lastArray.length === num) {
+        acc.push([item]);
+      }
+      else {
+        lastArray.push(item);
+      }
+      return acc;
+    }, [[]]);
+  }
+}
+
+/**
+ * HTML から一人の情報を取得する
+ * 
+ * @param {HTMLElement} personElem 子要素に .birthdate・.name を持つことを期待する .person 要素
+ * @return {{ name: string; birthdate: Date; }} 名前と生年月日の連想配列
+ * @throws .birthdate・.name 要素が1つずつ存在しない場合、中の値が不正な場合
+ */
+function getPersonInfoFromHtml(personElem) {
+  // 名前の要素を取得する
+  const nameElems = personElem.querySelectorAll('.name');
+  if(nameElems.length !== 1) throw new Error('Invalid .name Element');
+  const name = nameElems[0].innerText.trim() || '-';  // 名前が空欄の場合はハイフンを入れておく
+  
+  // 生年月日の要素を取得する
+  const birthdateElems = personElem.querySelectorAll('.birthdate');
+  if(birthdateElems.length !== 1) throw new Error('Invalid .birthdate Element');
+  const birthdate = stringToDate(birthdateElems[0].innerText.trim());  // 文字列が new Date() で解釈可能なら成功する・空文字は Invalid Date となる
+  if(birthdate.toString() === 'Invalid Date') throw new Error('Invalid Date');  // 生年月日が不正な場合
+  
+  return { name, birthdate };
+}
+
+/**
+ * 人情報を元に .person 配下の HTML を組み立てる
+ * @param {string} name 名前
+ * @param {Date} birthdate 誕生日
+ * @return {string} HTML
+ */
+function createPersonHtml(name, birthdate) {
+  // デザイン崩れ防止のため名前の長さを調整する
+  if(name.length > 10) name = `${name.substr(0, 10)}...`;
+  
+  // 生まれてからの日数を計算する
+  const livedDays = calcLivedDays(birthdate);
+  // 3万日までの残り日数を計算する
   const leftDays = 30000 - livedDays;
-  const text = (leftDays >= 0)
-    ? `${addComma(leftDays)} Day${leftDays !== 1 ? 's' : ''} Left`
-    : `${addComma(Math.abs(leftDays))} Day${leftDays !== -1 ? 's' : ''} Over`;
-  person.insertAdjacentHTML('beforeend', `<div class="left" >${text}<span class="space">&nbsp;</span></div>`);
+  const leftDayOrDays = `Day${leftDays !== 1 ? 's' : ''}`;
+  const leftDaysText = (leftDays >= 0)
+    ? `${addComma(leftDays)}           ${leftDayOrDays} Left`
+    : `${addComma(Math.abs(leftDays))} ${leftDayOrDays} Over`;
   
-  // 経過日を計算して表示する
-  person.insertAdjacentHTML('beforeend', '<div class="after after-10"   ><span class="space">&nbsp;&nbsp;&nbsp;&nbsp;</span>' +     `10日後：${getAfterDate(birthdate,    10)}</div>`);
-  person.insertAdjacentHTML('beforeend', '<div class="after after-100"  ><span class="space">&nbsp;&nbsp;&nbsp;</span>'       +    `100日後：${getAfterDate(birthdate,   100)}</div>`);
-  person.insertAdjacentHTML('beforeend', '<div class="after after-1000" ><span class="space">&nbsp;</span>'                   +  `1,000日後：${getAfterDate(birthdate,  1000)}</div>`);
-  person.insertAdjacentHTML('beforeend', '<div class="after after-10000">'                                                    + `10,000日後：${getAfterDate(birthdate, 10000)}</div>`);
-  person.insertAdjacentHTML('beforeend', '<div class="after after-20000">'                                                    + `20,000日後：${getAfterDate(birthdate, 20000)}</div>`);
-  person.insertAdjacentHTML('beforeend', '<div class="after after-30000">'                                                    + `30,000日後：${getAfterDate(birthdate, 30000)}</div>`);
+  // 年齢・次の誕生日・経過日などを計算して全ての HTML を組み立てる
+  return `
+    <div class="name" title="${name}">${name}</div>
+    <div class="birthdate">${formatDate(birthdate)}</div>
+    <div class="lived"><strong>${addComma(livedDays)}</strong> 日目 : <strong>${calcCurrentAge(birthdate)}</strong> 歳</div>
+    <div class="left">${leftDaysText}</div>
+    <div class="next-birthday">${calcNextBirthday(birthdate)} : ${calcCurrentAge(birthdate) + 1} 歳</div>
+    <div class="after">
+      <span class="after-key" title="0ヶ月">    10日後：</span><span class="after-value" title="0ヶ月">${calcAfterDate(birthdate,    10)}</span>
+      <span class="after-key" title="4ヶ月">   100日後：</span><span class="after-value" title="4ヶ月">${calcAfterDate(birthdate,   100)}</span>
+      <span class="after-key" title="3歳"  > 1,000日後：</span><span class="after-value" title="3歳"  >${calcAfterDate(birthdate,  1000)}</span>
+      <span class="after-key" title="27歳" >10,000日後：</span><span class="after-value" title="27歳" >${calcAfterDate(birthdate, 10000)}</span>
+      <span class="after-key" title="55歳" >20,000日後：</span><span class="after-value" title="55歳" >${calcAfterDate(birthdate, 20000)}</span>
+      <span class="after-key" title="82歳" >30,000日後：</span><span class="after-value" title="82歳" >${calcAfterDate(birthdate, 30000)}</span>
+    </div>
+  `;
 }
 
 /** イベント定義 */
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.person').forEach((person) => {
+  // URL パラメータから人情報を組み立てる
+  let isShowedParamsError = false;
+  const params = [...new URLSearchParams(location.search)].reduce((acc, pair) => ({...acc, [pair[0]]: pair[1]}), {});
+  try {
+    const isInsertToBottom = params['position'] === 'end';  // position=end パラメータがあれば body 直前に挿入する (true)・false なら #title 直後に挿入する
+    
+    const containers = getPeopleInfoFromParams(params);
+    const containersHtml = containers.reduce((containersHtml, container) => {
+      const peopleHtml = container.reduce((peopleHtml, personInfo) => {
+        return peopleHtml + '<div class="person">' + createPersonHtml(personInfo.name, personInfo.birthdate) + '</div>';
+      }, '');
+      return containersHtml + '<div class="container">' + peopleHtml + '</div>';
+    }, '');
+    if(containersHtml) {
+      if(isInsertToBottom) {
+        document.body.insertAdjacentHTML('beforeend', containersHtml);
+      }
+      else {
+        document.getElementById('title').insertAdjacentHTML('afterend', containersHtml);
+      }
+    }
+  }
+  catch(error) {
+    console.error('Failed To Parse Params', params, error);
+    if(!isShowedParamsError) document.getElementById('title').insertAdjacentHTML('afterend', `<p class="error-message">URL パラメータ中の情報のパースに失敗しました。記述を訂正してください。</p>`);
+    isShowedParamsError = true;
+  }
+  
+  // HTML 中の .person 要素から人情報を組み立てる
+  let isShowedHtmlError = false;
+  document.querySelectorAll('.person').forEach((personElem) => {
     try {
-      calcLived(person);
+      const personInfo = getPersonInfoFromHtml(personElem);
+      const personHtml = createPersonHtml(personInfo.name, personInfo.birthdate);
+      personElem.innerHTML = personHtml;
     }
     catch(error) {
-      console.error(error);
+      console.error('Failed To Parse HTML', personElem, error);
+      personElem.classList.add('has-error');
+      if(!isShowedHtmlError) document.getElementById('title').insertAdjacentHTML('afterend', `<p class="error-message">HTML 中の情報のパースに失敗しました。記述を訂正してください。</p>`);
+      isShowedHtmlError = true;
     }
   });
+  
+  // パース後に一つも情報がなければメッセージを表示する
+  if(document.querySelector('.person') == null) {
+    document.body.insertAdjacentHTML('beforeend', `<p>No Info</p>`);
+  }
 });
 
     </script>
   </head>
   <body>
-    <h1 id="title">Birthdates</h1>
-    <!--
-      次の形式で一人分の情報を記述する
-      
-      <div class="person">
-        <div class="name">名前</div>
-        <div class="birthdate">YYYY-MM-DD</div>
-      </div>
-    -->
 
-<div class="container">
-  <div class="person">
-    <div class="name">Name 1</div>
-    <div class="birthdate">1985-10-26</div>
-  </div>
-  <div class="person">
-    <div class="name">Name 2</div>
-    <div class="birthdate">2015-10-21</div>
-  </div>
-</div>
+<div id="github-link"><a href="https://github.com/Neos21/birthdates" target="_blank" title="GitHub Repository">GitHub</a></div>
+<h1 id="title"><a href="https://neos21.net/" target="_blank" title="Author : Neo">Birthdates</h1>
+
+<!--
+  - 次の形式で HTML 中に情報を記述できる。行を区切りたい場合は <div class="container"> で分割する
+    <div class="container">
+      <div class="person">
+        <div class="name">ExampleA</div>
+        <div class="birthdate">1991-01-01</div>
+      </div>
+      <div class="person">
+        <div class="name">ExampleB</div>
+        <div class="birthdate">1992-02-02</div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="person">
+        <div class="name">ExampleC</div>
+        <div class="birthdate">1993-03-03</div>
+      </div>
+      <div class="person">
+        <div class="name">ExampleD</div>
+        <div class="birthdate">1994-04-04</div>
+      </div>
+    </div>
+  
+  - もしくは次のように URL パラメータでも情報を記述できる。行を区切りたい場合はパラメータの c0・c1 部分の項番で分割する
+    ?c0=ExampleA,1991-01-01,ExampleB,1992-02-02&c1=ExampleC,1993-03-03,ExampleD,1994-04-04
+  - position=end パラメータを付与すると挿入位置を body 要素の終了タグ直前に変更できる
+-->
 
   </body>
 </html>
