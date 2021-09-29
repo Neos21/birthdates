@@ -141,7 +141,7 @@ const getCurrentDate = (() => {
  * @return {Date} 指定の年月日の0時0分0秒
  */
 function stringToDate(dateString) {
-  const date = new Date(dateString);
+  const date = new Date(dateString.replace((/ ?\([日月火水木金土]\)/u), ''));  // 曜日が入っていると Safari 系で Invalid Date になるので消しておく
   date.setHours(0);
   date.setMinutes(0);
   date.setSeconds(0);
